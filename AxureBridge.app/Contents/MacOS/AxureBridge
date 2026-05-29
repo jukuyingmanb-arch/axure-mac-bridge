@@ -1,0 +1,50 @@
+#!/bin/bash
+# AxureBridge — 默认走 prepare-drag：打开 Finder 选中文件 + 激活 Axure
+# 用户最后拖一下完成 import（macOS drag 安全模型无法绕过，详见 memory）
+#
+# 其他模式（仅诊断）：
+#   echo dump > /tmp/axure-bridge-mode       → 枚举 Axure 全部菜单
+#   echo menu-import > /tmp/axure-bridge-mode → 试老的 File → Import（不支持 SVG）
+#   echo drag > /tmp/axure-bridge-mode         → 试 CGEvent 拖拽（不工作，作为参考保留）
+
+set -u
+LOG="/tmp/axure-bridge.log"
+exec >>"$LOG" 2>&1
+echo "=== AxureBridge run at $(date) ==="
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+MODE_FILE="/tmp/axure-bridge-mode"
+MODE="prepare"
+[[ -f "$MODE_FILE" ]] && MODE=$(cat "$MODE_FILE")
+echo "mode=$MODE"
+
+SVG_PATH=""
+for a in "$@"; do
+    case "$a" in -psn_*) continue ;; *) SVG_PATH="$a"; break ;; esac
+done
+if [[ -z "$SVG_PATH" && -f /tmp/axure-bridge-input ]]; then
+    SVG_PATH=$(cat /tmp/axure-bridge-input)
+fi
+
+case "$MODE" in
+    dump)
+        /usr/bin/osascript "$SCRIPT_DIR/../Resources/dump-all-menus.applescript"
+        ;;
+    menu-import)
+        [[ -z "$SVG_PATH" ]] && { echo "ERR no path"; exit 1; }
+        /usr/bin/osascript "$SCRIPT_DIR/../Resources/import.applescript" "$SVG_PATH"
+        ;;
+    drag)
+        [[ -z "$SVG_PATH" ]] && { echo "ERR no path"; exit 1; }
+        [[ ! -f "$SVG_PATH" ]] && { echo "ERR file not found"; exit 1; }
+        /usr/bin/osascript "$SCRIPT_DIR/../Resources/drag-import.applescript" "$SVG_PATH"
+        ;;
+    prepare|*)
+        [[ -z "$SVG_PATH" ]] && { echo "ERR no path"; exit 1; }
+        [[ ! -f "$SVG_PATH" ]] && { echo "ERR file not found: $SVG_PATH"; exit 1; }
+        /usr/bin/osascript "$SCRIPT_DIR/../Resources/prepare-drag.applescript" "$SVG_PATH"
+        ;;
+esac
+EXIT=$?
+echo "exit=$EXIT"
+exit $EXIT

@@ -1,0 +1,13 @@
+{
+  "name": "axure-mac-bridge-svg-generator",
+  "version": "1.0.0",
+  "description": "SVG generator for Axure for Mac — primitives that work around Axure SVG parser quirks",
+  "type": "module",
+  "scripts": {
+    "demo": "node examples/feedback-page.mjs"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

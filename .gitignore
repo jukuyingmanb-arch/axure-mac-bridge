@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build/output
+dist/
+*.log
+
+# 用户产物（如果别人 clone 后跑过 demo）
+output/
