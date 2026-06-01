@@ -119,8 +119,17 @@ on run argv
     do shell script "echo " & quoted form of params & " > " & quoted form of paramsFile
     log "params: " & params
 
-    -- 5. 调用 Swift 合成拖拽（硬编码路径，避免 path to me 的歧义）
-    set swiftScript to "/Users/macbookpro/Library/Application Support/axure-bridge/AxureBridge.app/Contents/Resources/drag-cgevent.swift"
+    -- 5. 调用 Swift 合成拖拽
+    -- Resources 目录由主程序 AxureBridge 通过环境变量 BRIDGE_RES 传入（动态，不写死用户名）
+    set bridgeRes to ""
+    try
+        set bridgeRes to (system attribute "BRIDGE_RES")
+    end try
+    if bridgeRes is "" then
+        -- 兜底：从 path to me 推（.app 内运行时返回 .app 路径）
+        set bridgeRes to (POSIX path of (path to me)) & "Contents/Resources"
+    end if
+    set swiftScript to bridgeRes & "/drag-cgevent.swift"
     set swiftLog to "/tmp/axure-bridge-swift.log"
     -- 把 Swift 输出重定向到 swiftLog 便于诊断
     try

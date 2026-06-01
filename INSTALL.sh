@@ -61,6 +61,19 @@ cp -R "$BRIDGE_SRC" "$BRIDGE_DST"
 chmod +x "$BRIDGE_DST/Contents/MacOS/AxureBridge"
 echo "  ✅ 拷到 $BRIDGE_DST"
 
+# 去 quarantine：浏览器下载 zip 会带此属性，否则 Gatekeeper 拦 + TCC 授权不稳
+xattr -dr com.apple.quarantine "$BRIDGE_DST" 2>/dev/null || true
+echo "  ✅ 已清除 quarantine 隔离属性"
+
+# ad-hoc 签名：让 TCC 用稳定签名标识记录授权（否则改动/移动后权限失效要重授）
+if command -v codesign &> /dev/null; then
+    if codesign --force --deep --sign - "$BRIDGE_DST" 2>/dev/null; then
+        echo "  ✅ ad-hoc 签名完成"
+    else
+        echo "  ⚠️  ad-hoc 签名失败（不致命）"
+    fi
+fi
+
 echo
 
 # --- 3. 注册到 LaunchServices ---

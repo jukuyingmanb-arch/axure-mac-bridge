@@ -12,6 +12,8 @@ LOG="/tmp/axure-bridge.log"
 exec >>"$LOG" 2>&1
 echo "=== AxureBridge run at $(date) ==="
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# 把 Resources 目录传给 AppleScript（drag 模式定位 swift 脚本用，避免写死用户名）
+export BRIDGE_RES="$SCRIPT_DIR/../Resources"
 
 MODE_FILE="/tmp/axure-bridge-mode"
 MODE="prepare"
