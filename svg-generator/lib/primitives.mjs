@@ -13,6 +13,32 @@ export function escapeXml(s) {
 }
 
 /**
+ * 颜色护栏 — 把 Axure for Mac 解析器拒绝的「带 alpha 的 hex」拆成它能接受的形式（返回带前导空格的属性串）。
+ * Axure 只认 6 位 #RRGGBB；带透明度的 8 位 / 4 位 hex 会让整份 SVG 导入失败（Invalid color）。
+ *   #RRGGBBAA → name="#RRGGBB" name-opacity="a"   （拆出透明度，视觉保真）
+ *   #RGBA     → name="#RRGGBB" name-opacity="a"
+ *   #RGB / #RRGGBB / none / 命名色 → 原样输出（不确证有问题的不擅改，避免误伤现有调用）
+ * @param name  属性名，'fill' 或 'stroke'
+ * @param value 颜色值
+ */
+export function colorAttr(name, value) {
+  if (value == null || value === '') return '';
+  const v = String(value).trim();
+  const m = /^#([0-9a-fA-F]+)$/.exec(v);
+  if (!m) return ` ${name}="${v}"`;                 // none / 命名色 / 非 hex，原样
+  const h = m[1];
+  // 只处理确证被 Axure 拒绝的「带 alpha 的 hex」：8 位 #RRGGBBAA、4 位 #RGBA
+  if (h.length === 8 || h.length === 4) {
+    const rgb = h.length === 8 ? h.slice(0, 6) : h.slice(0, 3).replace(/./g, c => c + c);
+    const aHex = h.length === 8 ? h.slice(6, 8) : h[3] + h[3];
+    const a = parseInt(aHex, 16) / 255;
+    const op = a < 1 ? ` ${name}-opacity="${+a.toFixed(3)}"` : '';
+    return ` ${name}="#${rgb.toUpperCase()}"${op}`;
+  }
+  return ` ${name}="${v}"`;                          // 3 位 / 6 位 / 其它，原样
+}
+
+/**
  * 估算文字渲染宽度（用于手算 anchor 偏移）
  * 系数基于 Inter / PingFang SC 在 Axure for Mac 默认字体设置下的实测
  */
@@ -48,7 +74,7 @@ export function txt(x, top, str, opts = {}) {
   // baseline = visual top + ascender height (≈ 0.8 × fontSize for 系统字)
   const translateY = top + Math.round(size * 0.8);
 
-  const fill = opts.fill ? ` fill="${opts.fill}"` : '';
+  const fill = colorAttr('fill', opts.fill);
   const weight = opts.weight ? ` font-weight="${opts.weight}"` : '';
 
   return `<g transform="translate(${leftX}, ${translateY})"><text x="0" y="0" font-size="${size}"${fill}${weight}>${escapeXml(str)}</text></g>`;
@@ -87,9 +113,10 @@ export function txtBlock(x, top, str, opts = {}) {
  * 矩形（含可选圆角和描边）
  */
 export function rect(x, y, w, h, fill, opts = {}) {
-  const stroke = opts.stroke ? ` stroke="${opts.stroke}" stroke-width="${opts.strokeW ?? 1}"` : '';
+  const fillA = colorAttr('fill', fill);
+  const stroke = opts.stroke ? `${colorAttr('stroke', opts.stroke)} stroke-width="${opts.strokeW ?? 1}"` : '';
   const rx = opts.rx ? ` rx="${opts.rx}"` : '';
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"${stroke}${rx}/>`;
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}"${fillA}${stroke}${rx}/>`;
 }
 
 /**
